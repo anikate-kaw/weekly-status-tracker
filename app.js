@@ -1,12 +1,27 @@
 const STORAGE_KEY = 'weekly-status-tracker:v2';
+const API_STATE_ENDPOINT = '/api/state';
+const SAVE_DEBOUNCE_MS = 300;
 
 const newWeekBtn = document.getElementById('newWeekBtn');
 const exportBtn = document.getElementById('exportBtn');
+const importBtn = document.getElementById('importBtn');
 const importFile = document.getElementById('importFile');
 
 const weeksContainer = document.getElementById('weeksContainer');
 const weekTemplate = document.getElementById('weekTemplate');
 const tileTemplate = document.getElementById('tileTemplate');
+
+const weeksCount = document.getElementById('weeksCount');
+const tilesCount = document.getElementById('tilesCount');
+const storageMode = document.getElementById('storageMode');
+
+let stateCache = { weeks: {} };
+let serverReachable = false;
+let serverSaveTimer = null;
+
+function isValidStateShape(candidate) {
+  return Boolean(candidate && typeof candidate === 'object' && candidate.weeks && typeof candidate.weeks === 'object');
+}
 
 function isoDate(d) {
   const z = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
@@ -31,22 +46,19 @@ function addDays(d, days) {
 function fmtWeekLabel(weekStartISO) {
   const d = new Date(weekStartISO + 'T00:00:00');
   const end = addDays(d, 6);
-  return `Week of ${weekStartISO} → ${isoDate(end)}`;
+  return `Week of ${weekStartISO} -> ${isoDate(end)}`;
 }
 
-function loadState() {
-  // v2 shape: { weeks: { [weekStartISO]: { tiles:[{text}], createdAt } } }
+function loadLocalState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object' && parsed.weeks && typeof parsed.weeks === 'object') {
-        return parsed;
-      }
+      if (isValidStateShape(parsed)) return parsed;
     }
   } catch {}
 
-  // Attempt one-time migration from v1 (done/plan) if present
+  // One-time migration from v1 if present.
   try {
     const v1raw = localStorage.getItem('weekly-status-tracker:v1');
     if (v1raw) {
@@ -56,27 +68,86 @@ function loadState() {
         const tiles = [];
         const done = (w.done || []).map((t) => t.text).filter(Boolean);
         const plan = (w.plan || []).map((t) => t.text).filter(Boolean);
+
         if (done.length) {
           tiles.push({ text: 'Last week' });
           for (const t of done) tiles.push({ text: t });
         }
+
         if (plan.length) {
           tiles.push({ text: 'Next week' });
           for (const t of plan) tiles.push({ text: t });
         }
+
         weeks[wk] = { tiles, createdAt: w.createdAt || new Date().toISOString() };
       }
-      const state = { weeks };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      return state;
+
+      const migrated = { weeks };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      return migrated;
     }
   } catch {}
 
   return { weeks: {} };
 }
 
-function saveState(state) {
+function saveLocalState(state) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+async function loadServerState() {
+  const response = await fetch(API_STATE_ENDPOINT, { cache: 'no-store' });
+  if (!response.ok) throw new Error(`Server returned ${response.status}`);
+
+  const parsed = await response.json();
+  if (!isValidStateShape(parsed)) throw new Error('Invalid server state');
+
+  return parsed;
+}
+
+function updateStorageMode() {
+  if (!storageMode) return;
+
+  storageMode.textContent = serverReachable
+    ? 'Project file data/weekly-status.json'
+    : 'Browser localStorage (fallback)';
+}
+
+function setServerReachable(isReachable) {
+  serverReachable = isReachable;
+  updateStorageMode();
+}
+
+function scheduleServerSave(state) {
+  if (!serverReachable) return;
+
+  if (serverSaveTimer) {
+    clearTimeout(serverSaveTimer);
+  }
+
+  const payload = JSON.stringify(state);
+
+  serverSaveTimer = setTimeout(async () => {
+    try {
+      const response = await fetch(API_STATE_ENDPOINT, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
+    } catch {
+      setServerReachable(false);
+    }
+  }, SAVE_DEBOUNCE_MS);
+}
+
+function saveState(state) {
+  stateCache = state;
+  saveLocalState(stateCache);
+  scheduleServerSave(stateCache);
 }
 
 function ensureWeek(state, weekStartISO) {
@@ -93,6 +164,19 @@ function getAllWeeksSorted(state) {
   return Object.keys(state.weeks).sort((a, b) => (a < b ? 1 : -1));
 }
 
+function updateSummary(state) {
+  const weekKeys = Object.keys(state.weeks);
+  const weekTotal = weekKeys.length;
+  let tileTotal = 0;
+
+  for (const week of weekKeys) {
+    tileTotal += state.weeks[week]?.tiles?.length || 0;
+  }
+
+  if (weeksCount) weeksCount.textContent = String(weekTotal);
+  if (tilesCount) tilesCount.textContent = String(tileTotal);
+}
+
 function createTile(text = '') {
   const node = tileTemplate.content.firstElementChild.cloneNode(true);
   const body = node.querySelector('.tile-body');
@@ -104,8 +188,11 @@ function renderWeekSection(weekStartISO, weekData) {
   const section = weekTemplate.content.firstElementChild.cloneNode(true);
   section.dataset.week = weekStartISO;
 
+  const tileCount = weekData.tiles.length;
+  const tileLabel = tileCount === 1 ? 'tile' : 'tiles';
+
   section.querySelector('.week-title').textContent = fmtWeekLabel(weekStartISO);
-  section.querySelector('.week-meta').textContent = `Tiles: ${weekData.tiles.length}`;
+  section.querySelector('.week-meta').textContent = `${tileCount} ${tileLabel}`;
 
   const listEl = section.querySelector('ul.list');
   listEl.innerHTML = '';
@@ -121,32 +208,29 @@ function renderWeekSection(weekStartISO, weekData) {
     const hint = document.createElement('li');
     hint.className = 'tile';
     hint.innerHTML = `
-      <div class="tile-bar"><span class="drag"> </span><span>empty</span></div>
-      <div class="tile-body" style="color: var(--muted)">Add a tile, then write your sections (e.g. “Last week”, “Next week”).</div>
+      <div class="tile-bar"><span class="drag-wrap"><span class="drag"> </span><span class="drag-label">empty</span></span></div>
+      <div class="tile-body" style="color: var(--ink-soft)">Add a tile, then write your sections (for example, 'Last week' and 'Next week').</div>
     `;
-    hint.style.opacity = '0.75';
+    hint.style.opacity = '0.84';
     hint.style.borderStyle = 'dashed';
     listEl.appendChild(hint);
   }
 
-  // Add button
   section.querySelector('[data-action="add"]').addEventListener('click', () => {
     addTileToWeek(weekStartISO);
   });
 
-  // Delete week button
   section.querySelector('[data-action="delete-week"]').addEventListener('click', () => {
     deleteWeek(weekStartISO);
   });
 
-  // Wire tiles (edit/delete/reorder)
   wireWeekList(listEl);
 
   return section;
 }
 
 function render() {
-  const state = loadState();
+  const state = stateCache;
   let weeks = getAllWeeksSorted(state);
 
   // Keep first-run experience simple: start with this week when empty.
@@ -158,26 +242,31 @@ function render() {
   }
 
   weeksContainer.innerHTML = '';
-  for (const w of weeks) {
-    weeksContainer.appendChild(renderWeekSection(w, state.weeks[w]));
-  }
+
+  weeks.forEach((weekKey, idx) => {
+    const section = renderWeekSection(weekKey, state.weeks[weekKey]);
+    section.style.setProperty('--stagger', String(idx));
+    weeksContainer.appendChild(section);
+  });
+
+  updateSummary(state);
 }
 
 function addTileToWeek(weekStartISO) {
-  const state = loadState();
+  const state = stateCache;
   ensureWeek(state, weekStartISO);
   state.weeks[weekStartISO].tiles.unshift({ text: '' });
   saveState(state);
   render();
 
-  // focus first editable tile of that week
+  // Focus first editable tile of that week.
   const section = weeksContainer.querySelector(`[data-week="${CSS.escape(weekStartISO)}"]`);
   const first = section?.querySelector('.tile .tile-body');
   first?.focus();
 }
 
 function deleteWeek(weekStartISO) {
-  const state = loadState();
+  const state = stateCache;
   const week = state.weeks[weekStartISO];
   if (!week) return;
 
@@ -192,24 +281,26 @@ function deleteWeek(weekStartISO) {
 }
 
 function deleteTile(weekStartISO, idx) {
-  const state = loadState();
+  const state = stateCache;
   const week = state.weeks[weekStartISO];
   if (!week) return;
+
   week.tiles.splice(idx, 1);
   saveState(state);
   render();
 }
 
 function updateTileText(weekStartISO, idx, text) {
-  const state = loadState();
+  const state = stateCache;
   const week = state.weeks[weekStartISO];
   if (!week || !week.tiles[idx]) return;
+
   week.tiles[idx].text = text;
   saveState(state);
 }
 
 function moveTile(weekStartISO, fromIdx, toIdx) {
-  const state = loadState();
+  const state = stateCache;
   const week = state.weeks[weekStartISO];
   if (!week) return false;
 
@@ -239,7 +330,7 @@ function moveTileRelative(weekStartISO, idx, direction) {
 }
 
 function newWeek() {
-  const state = loadState();
+  const state = stateCache;
   const weeks = getAllWeeksSorted(state);
   const newest = weeks[0] || isoDate(startOfWeek());
   const d = new Date(newest + 'T00:00:00');
@@ -247,12 +338,11 @@ function newWeek() {
   ensureWeek(state, next);
   saveState(state);
   render();
-  // scroll to top (newest)
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function exportJson() {
-  const state = loadState();
+  const state = stateCache;
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -267,9 +357,10 @@ function exportJson() {
 async function importJson(file) {
   const text = await file.text();
   const parsed = JSON.parse(text);
-  if (!parsed || typeof parsed !== 'object') throw new Error('Invalid JSON');
-  if (!parsed.weeks || typeof parsed.weeks !== 'object') throw new Error('Missing weeks');
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+  if (!isValidStateShape(parsed)) throw new Error('Invalid JSON shape');
+
+  stateCache = parsed;
+  saveState(stateCache);
   render();
 }
 
@@ -359,9 +450,9 @@ function wireWeekList(listEl) {
   }
 }
 
-// Events
 newWeekBtn.addEventListener('click', newWeek);
 exportBtn.addEventListener('click', exportJson);
+importBtn.addEventListener('click', () => importFile.click());
 
 importFile.addEventListener('change', async () => {
   const file = importFile.files?.[0];
@@ -375,5 +466,19 @@ importFile.addEventListener('change', async () => {
   }
 });
 
-// Boot
-render();
+async function initialize() {
+  stateCache = loadLocalState();
+
+  try {
+    const serverState = await loadServerState();
+    stateCache = serverState;
+    saveLocalState(stateCache);
+    setServerReachable(true);
+  } catch {
+    setServerReachable(false);
+  }
+
+  render();
+}
+
+initialize();

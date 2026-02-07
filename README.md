@@ -1,16 +1,37 @@
 # weekly-status-tracker
 
-A tiny weekly status tracker you can run on **GitHub Pages**.
+A weekly status tracker with editable tiles and local machine persistence.
 
-- Scrollable feed of **weeks** (latest week on top).
-- Each week has **one** list of editable tiles.
-  - You can add your own section tiles like “Last week” and “Next week”.
-- Everything is stored **locally in your browser** via `localStorage`.
-- You can **export/import JSON** to move data between browsers.
+## Features
 
-## Run locally
-Open `index.html` in a browser.
+- Scrollable feed of weeks (latest week on top)
+- Add/delete weeks
+- Add/delete tiles inside each week
+- Reorder tiles with drag-and-drop or arrow controls
+- Export/import JSON
+- Auto-save to a local project file (`data/weekly-status.json`)
 
-## Deploy
-This repo is designed to work with GitHub Pages (static).
-Weekly status tracker with editable tiles
+## Run locally (project-file persistence)
+
+1. Open a terminal in this repo
+2. Start the local server:
+
+```bash
+node server.js
+```
+
+3. Open:
+
+```text
+http://localhost:4173
+```
+
+Your data is stored in:
+
+```text
+data/weekly-status.json
+```
+
+## Fallback mode
+
+If you open `index.html` directly without `server.js`, the app still works using browser `localStorage` as a fallback.

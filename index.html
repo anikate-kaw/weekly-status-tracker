@@ -7,60 +7,78 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <header class="topbar">
-      <div>
-        <h1>Weekly status</h1>
-        <p class="sub">One list per week. Editable tiles. Saved locally in your browser (no server).</p>
-      </div>
-
-      <div class="controls">
-        <button id="newWeekBtn" class="btn">New week</button>
-
-        <div class="divider"></div>
-
-        <button id="exportBtn" class="btn">Export JSON</button>
-        <label class="btn ghost" for="importFile">Import JSON</label>
-        <input id="importFile" type="file" accept="application/json" hidden />
-      </div>
-    </header>
-
-    <main class="stack">
-      <div id="weeksContainer" class="weeks" aria-label="Weeks"></div>
-    </main>
-
-    <template id="weekTemplate">
-      <section class="week">
-        <div class="week-head">
-          <div>
-            <h2 class="week-title"></h2>
-            <div class="week-meta"></div>
-          </div>
-          <div class="week-actions">
-            <button class="btn small danger" data-action="delete-week">Delete week</button>
-            <button class="btn small" data-action="add">Add tile</button>
-          </div>
+    <div class="page-shell">
+      <header class="topbar">
+        <div class="brand">
+          <p class="eyebrow">Weekly status tracker</p>
+          <h1>Build weekly updates faster.</h1>
+          <p class="sub">One list per week. Reorder sections by drag or arrows. Saved locally on your machine.</p>
         </div>
-        <ul class="list" aria-label="Week tiles"></ul>
+
+        <div class="controls" role="group" aria-label="Global actions">
+          <button id="newWeekBtn" class="btn primary" type="button">New week</button>
+          <button id="exportBtn" class="btn" type="button">Export JSON</button>
+          <button id="importBtn" class="btn ghost" type="button">Import JSON</button>
+          <input id="importFile" type="file" accept="application/json" hidden />
+        </div>
+      </header>
+
+      <section class="summary" aria-label="Tracker summary">
+        <article class="summary-card">
+          <p class="summary-label">Weeks tracked</p>
+          <p id="weeksCount" class="summary-value">0</p>
+        </article>
+        <article class="summary-card">
+          <p class="summary-label">Total tiles</p>
+          <p id="tilesCount" class="summary-value">0</p>
+        </article>
+        <article class="summary-card muted">
+          <p class="summary-label">Storage</p>
+          <p id="storageMode" class="summary-value">Project file</p>
+        </article>
       </section>
-    </template>
 
-    <template id="tileTemplate">
-      <li class="tile" draggable="true">
-        <div class="tile-bar">
-          <span class="drag" title="Drag to reorder" aria-label="Drag tile">⋮⋮</span>
-          <div class="tile-actions">
-            <button class="icon" data-action="up" title="Move up" aria-label="Move tile up">↑</button>
-            <button class="icon" data-action="down" title="Move down" aria-label="Move tile down">↓</button>
-            <button class="icon" data-action="delete" title="Delete" aria-label="Delete tile">✕</button>
+      <main class="stack">
+        <div id="weeksContainer" class="weeks" aria-label="Weeks"></div>
+      </main>
+
+      <template id="weekTemplate">
+        <section class="week">
+          <div class="week-head">
+            <div class="week-heading">
+              <h2 class="week-title"></h2>
+              <div class="week-meta"></div>
+            </div>
+            <div class="week-actions">
+              <button class="btn small danger" data-action="delete-week" type="button">Delete week</button>
+              <button class="btn small" data-action="add" type="button">Add tile</button>
+            </div>
           </div>
-        </div>
-        <div class="tile-body" contenteditable="true" spellcheck="true" data-placeholder="Add a section like “Last week” or “Next week”, then bullets..."></div>
-      </li>
-    </template>
+          <ul class="list" aria-label="Week tiles"></ul>
+        </section>
+      </template>
 
-    <footer class="footer">
-      <span>Tip: drag tiles or use arrows to reorder • edits auto-save</span>
-    </footer>
+      <template id="tileTemplate">
+        <li class="tile" draggable="true">
+          <div class="tile-bar">
+            <span class="drag-wrap">
+              <span class="drag" title="Drag to reorder" aria-label="Drag tile">⋮⋮</span>
+              <span class="drag-label">Drag</span>
+            </span>
+            <div class="tile-actions">
+              <button class="icon" data-action="up" title="Move up" aria-label="Move tile up" type="button">↑</button>
+              <button class="icon" data-action="down" title="Move down" aria-label="Move tile down" type="button">↓</button>
+              <button class="icon" data-action="delete" title="Delete" aria-label="Delete tile" type="button">✕</button>
+            </div>
+          </div>
+          <div class="tile-body" contenteditable="true" spellcheck="true" data-placeholder="Add a section like 'Last week' or 'Next week', then bullets..."></div>
+        </li>
+      </template>
+
+      <footer class="footer">
+        <span>Tip: drag tiles or use arrows to reorder. Edits auto-save.</span>
+      </footer>
+    </div>
 
     <script type="module" src="app.js"></script>
   </body>
