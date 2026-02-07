@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weekly Status Tracker</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>Weekly status</h1>
+        <p class="sub">Editable tiles. Saved locally in your browser (no server).</p>
+      </div>
+
+      <div class="controls">
+        <label class="week">
+          Week of
+          <select id="weekSelect" aria-label="Week selector"></select>
+        </label>
+
+        <button id="newWeekBtn" class="btn">New week</button>
+
+        <div class="divider"></div>
+
+        <button id="exportBtn" class="btn">Export JSON</button>
+        <label class="btn ghost" for="importFile">Import JSON</label>
+        <input id="importFile" type="file" accept="application/json" hidden />
+
+        <div class="divider"></div>
+
+        <button id="clearLocalBtn" class="btn danger">Clear local data</button>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Last week (done)</h2>
+          <button id="addDoneBtn" class="btn small">Add tile</button>
+        </div>
+        <ul id="doneList" class="list" aria-label="Done tiles"></ul>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Next week (plan)</h2>
+          <button id="addPlanBtn" class="btn small">Add tile</button>
+        </div>
+        <ul id="planList" class="list" aria-label="Plan tiles"></ul>
+      </section>
+    </main>
+
+    <template id="tileTemplate">
+      <li class="tile" draggable="true">
+        <div class="tile-bar">
+          <span class="drag" title="Drag to reorder">⋮⋮</span>
+          <button class="icon" data-action="delete" title="Delete">✕</button>
+        </div>
+        <div class="tile-body" contenteditable="true" spellcheck="true" data-placeholder="Type here..."></div>
+      </li>
+    </template>
+
+    <footer class="footer">
+      <span>Tip: drag tiles to reorder • edits auto-save</span>
+    </footer>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
