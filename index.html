@@ -35,7 +35,10 @@
             <h2 class="week-title"></h2>
             <div class="week-meta"></div>
           </div>
-          <button class="btn small" data-action="add">Add tile</button>
+          <div class="week-actions">
+            <button class="btn small danger" data-action="delete-week">Delete week</button>
+            <button class="btn small" data-action="add">Add tile</button>
+          </div>
         </div>
         <ul class="list" aria-label="Week tiles"></ul>
       </section>
@@ -44,15 +47,19 @@
     <template id="tileTemplate">
       <li class="tile" draggable="true">
         <div class="tile-bar">
-          <span class="drag" title="Drag to reorder">⋮⋮</span>
-          <button class="icon" data-action="delete" title="Delete">✕</button>
+          <span class="drag" title="Drag to reorder" aria-label="Drag tile">⋮⋮</span>
+          <div class="tile-actions">
+            <button class="icon" data-action="up" title="Move up" aria-label="Move tile up">↑</button>
+            <button class="icon" data-action="down" title="Move down" aria-label="Move tile down">↓</button>
+            <button class="icon" data-action="delete" title="Delete" aria-label="Delete tile">✕</button>
+          </div>
         </div>
         <div class="tile-body" contenteditable="true" spellcheck="true" data-placeholder="Add a section like “Last week” or “Next week”, then bullets..."></div>
       </li>
     </template>
 
     <footer class="footer">
-      <span>Tip: drag tiles to reorder • edits auto-save</span>
+      <span>Tip: drag tiles or use arrows to reorder • edits auto-save</span>
     </footer>
 
     <script type="module" src="app.js"></script>

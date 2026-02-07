@@ -134,7 +134,12 @@ function renderWeekSection(weekStartISO, weekData) {
     addTileToWeek(weekStartISO);
   });
 
-  // Wire tiles (edit/delete/drag)
+  // Delete week button
+  section.querySelector('[data-action="delete-week"]').addEventListener('click', () => {
+    deleteWeek(weekStartISO);
+  });
+
+  // Wire tiles (edit/delete/reorder)
   wireWeekList(listEl);
 
   return section;
@@ -142,13 +147,17 @@ function renderWeekSection(weekStartISO, weekData) {
 
 function render() {
   const state = loadState();
-  // Always ensure current week exists
-  const thisWeek = isoDate(startOfWeek());
-  ensureWeek(state, thisWeek);
-  saveState(state);
+  let weeks = getAllWeeksSorted(state);
+
+  // Keep first-run experience simple: start with this week when empty.
+  if (weeks.length === 0) {
+    const thisWeek = isoDate(startOfWeek());
+    ensureWeek(state, thisWeek);
+    saveState(state);
+    weeks = getAllWeeksSorted(state);
+  }
 
   weeksContainer.innerHTML = '';
-  const weeks = getAllWeeksSorted(state);
   for (const w of weeks) {
     weeksContainer.appendChild(renderWeekSection(w, state.weeks[w]));
   }
@@ -167,6 +176,21 @@ function addTileToWeek(weekStartISO) {
   first?.focus();
 }
 
+function deleteWeek(weekStartISO) {
+  const state = loadState();
+  const week = state.weeks[weekStartISO];
+  if (!week) return;
+
+  const tileCount = week.tiles.length;
+  const tileWord = tileCount === 1 ? 'tile' : 'tiles';
+  const ok = window.confirm(`Delete ${fmtWeekLabel(weekStartISO)}? This removes ${tileCount} ${tileWord}.`);
+  if (!ok) return;
+
+  delete state.weeks[weekStartISO];
+  saveState(state);
+  render();
+}
+
 function deleteTile(weekStartISO, idx) {
   const state = loadState();
   const week = state.weeks[weekStartISO];
@@ -182,6 +206,36 @@ function updateTileText(weekStartISO, idx, text) {
   if (!week || !week.tiles[idx]) return;
   week.tiles[idx].text = text;
   saveState(state);
+}
+
+function moveTile(weekStartISO, fromIdx, toIdx) {
+  const state = loadState();
+  const week = state.weeks[weekStartISO];
+  if (!week) return false;
+
+  const arr = week.tiles;
+  if (
+    fromIdx < 0 ||
+    toIdx < 0 ||
+    fromIdx >= arr.length ||
+    toIdx >= arr.length ||
+    fromIdx === toIdx
+  ) {
+    return false;
+  }
+
+  const [moved] = arr.splice(fromIdx, 1);
+  arr.splice(toIdx, 0, moved);
+
+  saveState(state);
+  return true;
+}
+
+function moveTileRelative(weekStartISO, idx, direction) {
+  const nextIdx = idx + direction;
+  if (moveTile(weekStartISO, idx, nextIdx)) {
+    render();
+  }
 }
 
 function newWeek() {
@@ -223,30 +277,54 @@ async function importJson(file) {
 let dragSrc = null;
 
 function wireWeekList(listEl) {
-  for (const tile of listEl.querySelectorAll('li.tile[draggable="true"]')) {
+  const tiles = Array.from(listEl.querySelectorAll('li.tile[draggable="true"]'));
+  const lastIndex = tiles.length - 1;
+
+  for (const tile of tiles) {
     const body = tile.querySelector('.tile-body');
+    const up = tile.querySelector('[data-action="up"]');
+    const down = tile.querySelector('[data-action="down"]');
     const del = tile.querySelector('[data-action="delete"]');
+
+    const idx = Number(tile.dataset.index);
+    up.disabled = idx === 0;
+    down.disabled = idx === lastIndex;
 
     body.addEventListener('input', () => {
       const week = tile.dataset.week;
-      const idx = Number(tile.dataset.index);
-      updateTileText(week, idx, body.textContent);
+      const currentIdx = Number(tile.dataset.index);
+      updateTileText(week, currentIdx, body.textContent);
+    });
+
+    up.addEventListener('click', () => {
+      const week = tile.dataset.week;
+      const currentIdx = Number(tile.dataset.index);
+      moveTileRelative(week, currentIdx, -1);
+    });
+
+    down.addEventListener('click', () => {
+      const week = tile.dataset.week;
+      const currentIdx = Number(tile.dataset.index);
+      moveTileRelative(week, currentIdx, 1);
     });
 
     del.addEventListener('click', () => {
       const week = tile.dataset.week;
-      const idx = Number(tile.dataset.index);
-      deleteTile(week, idx);
+      const currentIdx = Number(tile.dataset.index);
+      deleteTile(week, currentIdx);
     });
 
     tile.addEventListener('dragstart', (e) => {
       dragSrc = tile;
       tile.setAttribute('aria-grabbed', 'true');
       e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', JSON.stringify({
-        week: tile.dataset.week,
-        index: Number(tile.dataset.index),
-      }));
+      e.dataTransfer.setData(
+        'text/plain',
+        JSON.stringify({
+          week: tile.dataset.week,
+          index: Number(tile.dataset.index),
+        }),
+      );
     });
 
     tile.addEventListener('dragend', () => {
@@ -263,22 +341,20 @@ function wireWeekList(listEl) {
       e.preventDefault();
       if (!dragSrc) return;
 
-      const from = JSON.parse(e.dataTransfer.getData('text/plain'));
+      let from;
+      try {
+        from = JSON.parse(e.dataTransfer.getData('text/plain'));
+      } catch {
+        return;
+      }
+
       const to = { week: tile.dataset.week, index: Number(tile.dataset.index) };
       if (from.week !== to.week) return; // keep it simple: no cross-week moves
 
-      const state = loadState();
-      const week = state.weeks[from.week];
-      if (!week) return;
-
-      const arr = week.tiles;
-      const [moved] = arr.splice(from.index, 1);
-      let insertAt = to.index;
-      if (from.index < to.index) insertAt = to.index - 1;
-      arr.splice(insertAt, 0, moved);
-
-      saveState(state);
-      render();
+      const insertAt = from.index < to.index ? to.index - 1 : to.index;
+      if (moveTile(from.week, from.index, insertAt)) {
+        render();
+      }
     });
   }
 }

@@ -50,6 +50,11 @@ h1{margin:0; font-size:20px; letter-spacing:.2px}
 .btn:hover{border-color: color-mix(in oklab, var(--accent) 55%, var(--border))}
 .btn.small{padding:7px 10px; border-radius:10px}
 .btn.ghost{background:transparent}
+.btn.danger{
+  border-color: color-mix(in oklab, var(--danger) 35%, var(--border));
+  color: color-mix(in oklab, var(--danger) 70%, var(--text));
+}
+.btn.danger:hover{border-color: color-mix(in oklab, var(--danger) 65%, var(--border))}
 
 .stack{padding:14px 18px 60px}
 .weeks{display:flex; flex-direction:column; gap:14px; max-width: 980px; margin: 0 auto;}
@@ -68,6 +73,8 @@ h1{margin:0; font-size:20px; letter-spacing:.2px}
   padding:14px 14px;
   border-bottom:1px solid var(--border);
 }
+
+.week-actions{display:flex; align-items:center; gap:8px}
 
 .week-title{margin:0; font-size:15px; color:#d8e6f7}
 .week-meta{margin-top:6px; color:var(--muted); font-size:12px}
@@ -93,6 +100,7 @@ h1{margin:0; font-size:20px; letter-spacing:.2px}
 }
 
 .drag{cursor:grab; user-select:none}
+.tile-actions{display:flex; align-items:center; gap:8px}
 
 .icon{
   background:transparent;
@@ -103,6 +111,8 @@ h1{margin:0; font-size:20px; letter-spacing:.2px}
   cursor:pointer;
 }
 .icon:hover{border-color: color-mix(in oklab, var(--danger) 60%, var(--border)); color: color-mix(in oklab, var(--danger) 70%, var(--text))}
+.icon:disabled{opacity:.45; cursor:not-allowed}
+.icon:disabled:hover{border-color: var(--border); color: var(--muted)}
 
 .tile-body{
   padding:12px;
