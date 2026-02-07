@@ -2,9 +2,9 @@
 
 A tiny weekly status tracker you can run on **GitHub Pages**.
 
-- Each week has two lists of editable tiles:
-  - **Last week (done)**
-  - **Next week (plan)**
+- Scrollable feed of **weeks** (latest week on top).
+- Each week has **one** list of editable tiles.
+  - You can add your own section tiles like “Last week” and “Next week”.
 - Everything is stored **locally in your browser** via `localStorage`.
 - You can **export/import JSON** to move data between browsers.
 

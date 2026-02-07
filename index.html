@@ -10,15 +10,10 @@
     <header class="topbar">
       <div>
         <h1>Weekly status</h1>
-        <p class="sub">Editable tiles. Saved locally in your browser (no server).</p>
+        <p class="sub">One list per week. Editable tiles. Saved locally in your browser (no server).</p>
       </div>
 
       <div class="controls">
-        <label class="week">
-          Week of
-          <select id="weekSelect" aria-label="Week selector"></select>
-        </label>
-
         <button id="newWeekBtn" class="btn">New week</button>
 
         <div class="divider"></div>
@@ -26,30 +21,25 @@
         <button id="exportBtn" class="btn">Export JSON</button>
         <label class="btn ghost" for="importFile">Import JSON</label>
         <input id="importFile" type="file" accept="application/json" hidden />
-
-        <div class="divider"></div>
-
-        <button id="clearLocalBtn" class="btn danger">Clear local data</button>
       </div>
     </header>
 
-    <main class="grid">
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Last week (done)</h2>
-          <button id="addDoneBtn" class="btn small">Add tile</button>
-        </div>
-        <ul id="doneList" class="list" aria-label="Done tiles"></ul>
-      </section>
-
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Next week (plan)</h2>
-          <button id="addPlanBtn" class="btn small">Add tile</button>
-        </div>
-        <ul id="planList" class="list" aria-label="Plan tiles"></ul>
-      </section>
+    <main class="stack">
+      <div id="weeksContainer" class="weeks" aria-label="Weeks"></div>
     </main>
+
+    <template id="weekTemplate">
+      <section class="week">
+        <div class="week-head">
+          <div>
+            <h2 class="week-title"></h2>
+            <div class="week-meta"></div>
+          </div>
+          <button class="btn small" data-action="add">Add tile</button>
+        </div>
+        <ul class="list" aria-label="Week tiles"></ul>
+      </section>
+    </template>
 
     <template id="tileTemplate">
       <li class="tile" draggable="true">
@@ -57,7 +47,7 @@
           <span class="drag" title="Drag to reorder">⋮⋮</span>
           <button class="icon" data-action="delete" title="Delete">✕</button>
         </div>
-        <div class="tile-body" contenteditable="true" spellcheck="true" data-placeholder="Type here..."></div>
+        <div class="tile-body" contenteditable="true" spellcheck="true" data-placeholder="Add a section like “Last week” or “Next week”, then bullets..."></div>
       </li>
     </template>
 
