@@ -1,8 +1,45 @@
 {
   "weeks": {
     "2026-02-02": {
-      "tiles": [],
+      "tiles": [
+        {
+          "text": "Mostly worked on adding new dma tests."
+        }
+      ],
       "createdAt": "2026-02-07T10:45:53.168Z"
+    },
+    "2026-01-26": {
+      "tiles": [],
+      "createdAt": "2026-02-08T08:26:27.380Z"
     }
+  },
+  "tasks": [
+    {
+      "id": "75ed9dba-cc6f-46ab-8ef4-6db479781d85",
+      "name": "",
+      "status": "not_started",
+      "priority": "P0",
+      "createdAt": "2026-02-08T07:34:45.328Z"
+    },
+    {
+      "id": "5f7c2ffa-07ff-4913-b352-51504139ac00",
+      "name": "",
+      "status": "in_progress",
+      "priority": "P2",
+      "createdAt": "2026-02-08T07:34:52.489Z"
+    },
+    {
+      "id": "534903a2-7757-4224-98d3-512ea133a1e4",
+      "name": "",
+      "status": "done",
+      "priority": "P1",
+      "createdAt": "2026-02-08T08:13:18.145Z"
+    }
+  ],
+  "taskSortMode": "created_at",
+  "taskColumns": {
+    "name": 440,
+    "status": 180,
+    "priority": 120
   }
 }
