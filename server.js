@@ -13,7 +13,7 @@ const DATA_FILE = path.join(DATA_DIR, 'weekly-status.json');
 const PORT = Number(process.env.PORT || 4173);
 const MAX_BODY_BYTES = 1_000_000;
 
-const DEFAULT_STATE = { weeks: {}, tasks: [], taskSortMode: 'created_at', taskColumns: { name: 440, status: 180, priority: 120 } };
+const DEFAULT_STATE = { weeks: {}, tasks: [], taskSortMode: 'created_at', taskColumns: { name: 440, status: 180, priority: 120 }, skills: [] };
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -52,6 +52,9 @@ function normalizeState(candidate) {
       status: Number.isFinite(safeColumns.status) ? safeColumns.status : DEFAULT_STATE.taskColumns.status,
       priority: Number.isFinite(safeColumns.priority) ? safeColumns.priority : DEFAULT_STATE.taskColumns.priority,
     },
+    skills: Array.isArray(candidate.skills)
+      ? candidate.skills.filter((skill) => skill && typeof skill === 'object')
+      : [],
   };
 }
 

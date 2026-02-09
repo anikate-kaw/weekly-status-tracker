@@ -36,11 +36,19 @@ const PRIORITY_SORT_ORDER = {
   P3: 3,
 };
 
+const VIEW_DASHBOARD = 'dashboard';
+const VIEW_SKILLS = 'skills';
+
 const nextWeekBtn = document.getElementById('nextWeekBtn');
 const previousWeekBtn = document.getElementById('previousWeekBtn');
-const exportBtn = document.getElementById('exportBtn');
-const importBtn = document.getElementById('importBtn');
-const importFile = document.getElementById('importFile');
+const trackerBtn = document.getElementById('trackerBtn');
+const skillsBtn = document.getElementById('skillsBtn');
+
+const dashboardView = document.getElementById('dashboardView');
+const skillsView = document.getElementById('skillsView');
+const skillsAddBtn = document.getElementById('skillsAddBtn');
+const skillsGrid = document.getElementById('skillsGrid');
+const skillsEmptyHint = document.getElementById('skillsEmptyHint');
 
 const addTaskBtn = document.getElementById('addTaskBtn');
 const taskSortSelect = document.getElementById('taskSortSelect');
@@ -55,6 +63,7 @@ const weeksContainer = document.getElementById('weeksContainer');
 const weekTemplate = document.getElementById('weekTemplate');
 const tileTemplate = document.getElementById('tileTemplate');
 const taskRowTemplate = document.getElementById('taskRowTemplate');
+const skillTileTemplate = document.getElementById('skillTileTemplate');
 
 const storageMode = document.getElementById('storageMode');
 
@@ -63,11 +72,14 @@ let stateCache = {
   tasks: [],
   taskSortMode: 'created_at',
   taskColumns: { ...TASK_COLUMN_DEFAULTS },
+  skills: [],
 };
 
+let activeView = VIEW_DASHBOARD;
 let serverReachable = false;
 let serverSaveTimer = null;
 let dragSrc = null;
+let skillDragSourceId = null;
 let activeTaskResize = null;
 let taskColumnLayoutRaf = null;
 
@@ -82,6 +94,13 @@ function generateTaskId() {
   return `task-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+
+function generateSkillId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `skill-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
 function isValidIsoDate(isoString) {
   return typeof isoString === 'string' && Number.isFinite(Date.parse(isoString));
 }
@@ -123,9 +142,27 @@ function normalizeTask(task) {
   };
 }
 
+function normalizeSkill(skill) {
+  if (!skill || typeof skill !== "object") {
+    return null;
+  }
+
+  const id = typeof skill.id === "string" && skill.id.trim() ? skill.id : generateSkillId();
+  const title = typeof skill.title === "string" ? skill.title : "";
+  const text = typeof skill.text === "string" ? skill.text : "";
+  const createdAt = isValidIsoDate(skill.createdAt) ? skill.createdAt : new Date().toISOString();
+
+  return {
+    id,
+    title,
+    text,
+    createdAt,
+  };
+}
+
 function normalizeState(candidate) {
   const normalizedWeeks =
-    candidate && typeof candidate.weeks === 'object' && candidate.weeks !== null
+    candidate && typeof candidate.weeks === "object" && candidate.weeks !== null
       ? candidate.weeks
       : {};
 
@@ -146,15 +183,33 @@ function normalizeState(candidate) {
     normalizedTasks.push({ ...task, id: taskId });
   }
 
+  const rawSkills = Array.isArray(candidate?.skills) ? candidate.skills : [];
+  const seenSkillIds = new Set();
+  const normalizedSkills = [];
+
+  for (const rawSkill of rawSkills) {
+    const skill = normalizeSkill(rawSkill);
+    if (!skill) continue;
+
+    let skillId = skill.id;
+    while (seenSkillIds.has(skillId)) {
+      skillId = generateSkillId();
+    }
+
+    seenSkillIds.add(skillId);
+    normalizedSkills.push({ ...skill, id: skillId });
+  }
+
   const normalizedSortMode = TASK_SORT_MODES.includes(candidate?.taskSortMode)
     ? candidate.taskSortMode
-    : 'created_at';
+    : "created_at";
 
   return {
     weeks: normalizedWeeks,
     tasks: normalizedTasks,
     taskSortMode: normalizedSortMode,
     taskColumns: normalizeTaskColumns(candidate?.taskColumns),
+    skills: normalizedSkills,
   };
 }
 
@@ -184,6 +239,54 @@ function fmtWeekLabel(weekStartISO) {
   return `Week of ${weekStartISO} -> ${isoDate(end)}`;
 }
 
+
+function viewFromHash(hashValue) {
+  return hashValue === "#skills" ? VIEW_SKILLS : VIEW_DASHBOARD;
+}
+
+function hashForView(view) {
+  return view === VIEW_SKILLS ? "#skills" : "#dashboard";
+}
+
+function setActiveView(view, { syncHash = true } = {}) {
+  const nextView = view === VIEW_SKILLS ? VIEW_SKILLS : VIEW_DASHBOARD;
+  activeView = nextView;
+
+  if (dashboardView) {
+    dashboardView.hidden = nextView !== VIEW_DASHBOARD;
+  }
+
+  if (skillsView) {
+    skillsView.hidden = nextView !== VIEW_SKILLS;
+  }
+
+  if (trackerBtn) {
+    const isDashboard = nextView === VIEW_DASHBOARD;
+    trackerBtn.classList.toggle('is-active', isDashboard);
+    trackerBtn.setAttribute('aria-pressed', String(isDashboard));
+  }
+
+  if (skillsBtn) {
+    const isSkills = nextView === VIEW_SKILLS;
+    skillsBtn.classList.toggle('is-active', isSkills);
+    skillsBtn.setAttribute('aria-pressed', String(isSkills));
+  }
+
+  document.title = nextView === VIEW_SKILLS
+    ? "Skills - Weekly Status Tracker"
+    : "Weekly Status Tracker";
+
+  if (syncHash) {
+    const targetHash = hashForView(nextView);
+    if (window.location.hash !== targetHash) {
+      if (history.replaceState) {
+        history.replaceState(null, "", targetHash);
+      } else {
+        window.location.hash = targetHash;
+      }
+    }
+  }
+}
 function loadLocalState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -733,6 +836,250 @@ function renderTasks() {
   }
 }
 
+
+function createSkillTile() {
+  return {
+    id: generateSkillId(),
+    title: "",
+    text: "",
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function autoGrowSkillTextInput(textInput) {
+  if (!(textInput instanceof HTMLTextAreaElement)) return;
+
+  textInput.style.height = "0px";
+  const nextHeight = Math.max(232, textInput.scrollHeight);
+  textInput.style.height = `${nextHeight}px`;
+}
+
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      // Fall through to a legacy copy path when clipboard permissions are restricted.
+    }
+  }
+
+  const scratch = document.createElement("textarea");
+  scratch.value = text;
+  scratch.setAttribute("readonly", "true");
+  scratch.style.position = "fixed";
+  scratch.style.top = "-9999px";
+  scratch.style.left = "-9999px";
+  scratch.style.opacity = "0";
+  document.body.appendChild(scratch);
+  scratch.focus();
+  scratch.select();
+
+  let copied = false;
+  try {
+    copied = document.execCommand("copy");
+  } catch {
+    copied = false;
+  }
+
+  scratch.remove();
+
+  if (!copied) {
+    throw new Error("Clipboard copy failed");
+  }
+}
+
+function flashSkillCopyStatus(copyBtn, nextLabel) {
+  if (!copyBtn) return;
+
+  copyBtn.textContent = nextLabel;
+
+  window.clearTimeout(copyBtn._copyLabelTimer);
+  copyBtn._copyLabelTimer = window.setTimeout(() => {
+    copyBtn.textContent = "Copy";
+  }, 1000);
+}
+
+function focusSkillTitle(skillId) {
+  if (!skillsGrid) return;
+
+  const input = skillsGrid.querySelector(`[data-skill-id=\"${CSS.escape(skillId)}\"] .skill-title-input`);
+  if (!input) return;
+
+  input.focus();
+  if (typeof input.setSelectionRange === "function") {
+    const end = typeof input.value === "string" ? input.value.length : 0;
+    input.setSelectionRange(end, end);
+  }
+}
+
+function addSkillTile() {
+  const state = stateCache;
+  const skill = createSkillTile();
+  state.skills.push(skill);
+  saveState(state);
+  render();
+  return skill.id;
+}
+
+function updateSkillTile(skillId, patch, shouldRender = false) {
+  const state = stateCache;
+  const skill = state.skills.find((item) => item.id === skillId);
+  if (!skill) return;
+
+  if (Object.prototype.hasOwnProperty.call(patch, "title")) {
+    skill.title = typeof patch.title === "string" ? patch.title : String(patch.title ?? "");
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, "text")) {
+    skill.text = typeof patch.text === "string" ? patch.text : String(patch.text ?? "");
+  }
+
+  saveState(state);
+
+  if (shouldRender) {
+    render();
+  }
+}
+
+function deleteSkillTile(skillId) {
+  const state = stateCache;
+  const idx = state.skills.findIndex((skill) => skill.id === skillId);
+  if (idx === -1) return;
+
+  state.skills.splice(idx, 1);
+  saveState(state);
+  render();
+}
+
+function moveSkillTile(fromIndex, toIndex) {
+  const state = stateCache;
+  const arr = state.skills;
+
+  if (
+    fromIndex < 0 ||
+    toIndex < 0 ||
+    fromIndex >= arr.length ||
+    toIndex >= arr.length ||
+    fromIndex === toIndex
+  ) {
+    return false;
+  }
+
+  const [moved] = arr.splice(fromIndex, 1);
+  arr.splice(toIndex, 0, moved);
+  saveState(state);
+  return true;
+}
+
+function clearSkillDropTargets() {
+  if (!skillsGrid) return;
+  skillsGrid.querySelectorAll(".skill-tile.is-drop-target").forEach((node) => {
+    node.classList.remove("is-drop-target");
+  });
+}
+
+function renderSkills() {
+  if (!skillsGrid || !skillTileTemplate) return;
+
+  const state = stateCache;
+  skillsGrid.innerHTML = "";
+
+  for (const skill of state.skills) {
+    const tile = skillTileTemplate.content.firstElementChild.cloneNode(true);
+    tile.dataset.skillId = skill.id;
+
+    const dragHandle = tile.querySelector(".skill-drag");
+    const titleInput = tile.querySelector(".skill-title-input");
+    const textInput = tile.querySelector(".skill-text-input");
+    const copyBtn = tile.querySelector("[data-action=\"copy-skill\"]");
+    const deleteBtn = tile.querySelector("[data-action=\"delete-skill\"]");
+
+    titleInput.value = skill.title;
+    textInput.value = skill.text;
+    autoGrowSkillTextInput(textInput);
+
+    titleInput.addEventListener("input", () => {
+      updateSkillTile(skill.id, { title: titleInput.value }, false);
+    });
+
+    textInput.addEventListener("input", () => {
+      autoGrowSkillTextInput(textInput);
+      updateSkillTile(skill.id, { text: textInput.value }, false);
+    });
+
+    textInput.addEventListener("paste", () => {
+      window.setTimeout(() => {
+        autoGrowSkillTextInput(textInput);
+        updateSkillTile(skill.id, { text: textInput.value }, false);
+      }, 0);
+    });
+
+    copyBtn.addEventListener("click", async () => {
+      const textToCopy = textInput.value ?? "";
+
+      try {
+        await copyTextToClipboard(textToCopy);
+        flashSkillCopyStatus(copyBtn, "Copied");
+      } catch {
+        flashSkillCopyStatus(copyBtn, "Failed");
+      }
+    });
+
+    deleteBtn.addEventListener("click", () => {
+      deleteSkillTile(skill.id);
+    });
+
+    dragHandle.addEventListener("dragstart", (event) => {
+      skillDragSourceId = skill.id;
+      tile.classList.add("is-grabbed");
+      clearSkillDropTargets();
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", skill.id);
+    });
+
+    dragHandle.addEventListener("dragend", () => {
+      tile.classList.remove("is-grabbed");
+      clearSkillDropTargets();
+      skillDragSourceId = null;
+    });
+
+    tile.addEventListener("dragover", (event) => {
+      const sourceId = skillDragSourceId || event.dataTransfer.getData("text/plain");
+      if (!sourceId || sourceId === skill.id) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      tile.classList.add("is-drop-target");
+    });
+
+    tile.addEventListener("dragleave", () => {
+      tile.classList.remove("is-drop-target");
+    });
+
+    tile.addEventListener("drop", (event) => {
+      event.preventDefault();
+      tile.classList.remove("is-drop-target");
+
+      const sourceId = skillDragSourceId || event.dataTransfer.getData("text/plain");
+      if (!sourceId || sourceId === skill.id) return;
+
+      const fromIndex = stateCache.skills.findIndex((item) => item.id === sourceId);
+      const toIndex = stateCache.skills.findIndex((item) => item.id === skill.id);
+      if (fromIndex === -1 || toIndex === -1) return;
+
+      const insertAt = toIndex;
+      if (moveSkillTile(fromIndex, insertAt)) {
+        render();
+      }
+    });
+
+    skillsGrid.appendChild(tile);
+  }
+
+  if (skillsEmptyHint) {
+    skillsEmptyHint.hidden = state.skills.length > 0;
+  }
+}
 function renderWeekSection(weekStartISO, weekData) {
   const section = weekTemplate.content.firstElementChild.cloneNode(true);
   section.dataset.week = weekStartISO;
@@ -798,6 +1145,7 @@ function render() {
     weeksContainer.appendChild(section);
   });
   renderTasks();
+  renderSkills();
   scheduleTaskColumnLayoutSync();
 }
 
@@ -904,29 +1252,6 @@ function addPreviousWeek() {
   }
 }
 
-function exportJson() {
-  const state = stateCache;
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `weekly-status-tracker-${new Date().toISOString().slice(0, 10)}.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
-async function importJson(file) {
-  const text = await file.text();
-  const parsed = JSON.parse(text);
-  if (!isValidStateShape(parsed)) throw new Error('Invalid JSON shape');
-
-  stateCache = normalizeState(parsed);
-  saveState(stateCache);
-  render();
-}
-
 function wireWeekList(listEl) {
   const tiles = Array.from(listEl.querySelectorAll('li.tile[draggable="true"]'));
   const lastIndex = tiles.length - 1;
@@ -1013,6 +1338,26 @@ function wireWeekList(listEl) {
 nextWeekBtn.addEventListener('click', addNextWeek);
 previousWeekBtn.addEventListener('click', addPreviousWeek);
 
+
+if (trackerBtn) {
+  trackerBtn.addEventListener('click', () => {
+    setActiveView(VIEW_DASHBOARD);
+  });
+}
+
+if (skillsBtn) {
+  skillsBtn.addEventListener('click', () => {
+    setActiveView(VIEW_SKILLS);
+  });
+}
+
+if (skillsAddBtn) {
+  skillsAddBtn.addEventListener('click', () => {
+    const skillId = addSkillTile();
+    setActiveView(VIEW_SKILLS);
+    focusSkillTitle(skillId);
+  });
+}
 addTaskBtn.addEventListener('click', () => {
   const taskId = addTask();
   focusTaskName(taskId);
@@ -1036,19 +1381,8 @@ if (taskResizeStatusPriority) {
 
 window.addEventListener('resize', scheduleTaskColumnLayoutSync);
 
-exportBtn.addEventListener('click', exportJson);
-importBtn.addEventListener('click', () => importFile.click());
-
-importFile.addEventListener('change', async () => {
-  const file = importFile.files?.[0];
-  if (!file) return;
-  try {
-    await importJson(file);
-  } catch (e) {
-    alert(`Import failed: ${e.message || e}`);
-  } finally {
-    importFile.value = '';
-  }
+window.addEventListener('hashchange', () => {
+  setActiveView(viewFromHash(window.location.hash), { syncHash: false });
 });
 
 async function initialize() {
@@ -1064,6 +1398,7 @@ async function initialize() {
   }
 
   render();
+  setActiveView(viewFromHash(window.location.hash), { syncHash: true });
 }
 
 initialize();

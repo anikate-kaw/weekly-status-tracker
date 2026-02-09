@@ -824,3 +824,209 @@ label.btn:focus-visible,
     scroll-behavior: auto !important;
   }
 }
+
+.app-view[hidden] {
+  display: none !important;
+}
+
+.btn.is-active {
+  border-color: color-mix(in oklab, var(--brand-2) 60%, var(--line-strong));
+  background: color-mix(in oklab, var(--surface-3) 78%, #162a42);
+  color: var(--text-1);
+}
+
+.skills-view {
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-card);
+  background: color-mix(in oklab, var(--surface-1) 92%, #13253b);
+  box-shadow: var(--shadow-2);
+  padding: 1rem;
+}
+
+.skills-topbar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1rem;
+  align-items: end;
+  margin-bottom: 1rem;
+}
+
+.skills-title {
+  margin: 0.36rem 0 0;
+  font-family: 'Space Grotesk', 'Avenir Next', sans-serif;
+  font-size: clamp(1.35rem, 2.2vw, 1.8rem);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+}
+
+.skills-sub {
+  margin: 0.5rem 0 0;
+  color: var(--text-3);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.skills-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.skills-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.95rem;
+}
+
+.skill-tile {
+  border: 1px solid var(--line-subtle);
+  border-radius: 18px;
+  background: color-mix(in oklab, var(--surface-2) 88%, #101c2b);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.015), var(--shadow-1);
+  min-height: 23rem;
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.72rem;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.skill-tile:hover {
+  border-color: color-mix(in oklab, var(--brand-2) 42%, var(--line-strong));
+  box-shadow: 0 10px 22px rgb(2 10 20 / 0.34);
+  transform: translateY(-1px);
+}
+
+.skill-tile.is-grabbed {
+  border-color: color-mix(in oklab, var(--brand-1) 60%, var(--line-strong));
+  box-shadow: 0 0 0 2px rgb(139 192 255 / 0.22);
+}
+
+.skill-tile.is-drop-target {
+  border-color: color-mix(in oklab, var(--focus-ring) 72%, var(--line-strong));
+  box-shadow: 0 0 0 2px rgb(139 192 255 / 0.24);
+}
+
+.skill-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.3rem;
+  padding-bottom: 0.52rem;
+  border-bottom: 1px solid var(--line-subtle);
+}
+
+.skill-drag {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--line-subtle);
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--surface-1) 86%, #111d2c);
+  color: var(--text-2);
+  font-size: 1rem;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  cursor: grab;
+  user-select: none;
+}
+
+.skill-drag:hover {
+  border-color: color-mix(in oklab, var(--brand-2) 52%, var(--line-strong));
+  color: var(--text-1);
+}
+
+.skill-drag:active {
+  cursor: grabbing;
+}
+
+.skill-title-input,
+.skill-text-input {
+  border: 1px solid var(--line-subtle);
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--surface-2) 90%, #0e1a29);
+  color: var(--text-1);
+  font: inherit;
+}
+
+.skill-title-input {
+  width: 100%;
+  min-height: 2rem;
+  padding: 0.42rem 0.56rem;
+  font-family: 'Space Grotesk', 'Avenir Next', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.skill-copy {
+  min-height: 2rem;
+  min-width: 4.6rem;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+  line-height: 1;
+}
+
+.skill-delete {
+  min-width: 2rem;
+  height: 2rem;
+}
+
+.skill-text-input {
+  width: 100%;
+  min-height: 14.5rem;
+  flex: 1;
+  padding: 0.7rem 0.75rem;
+  line-height: 1.5;
+  resize: vertical;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.skills-empty {
+  margin: 0.9rem 0 0;
+  color: var(--text-3);
+  font-size: 0.88rem;
+}
+
+.skills-empty[hidden] {
+  display: none;
+}
+
+@media (max-width: 1280px) {
+  .skills-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .skills-topbar {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .skills-actions {
+    justify-content: flex-start;
+  }
+
+  .skills-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .skills-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .skill-text-input {
+    min-height: 12.5rem;
+  }
+}
