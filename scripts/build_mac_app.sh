@@ -33,6 +33,8 @@ swiftc \
 rm -rf "$WEB_BUNDLE_DIR"
 mkdir -p "$WEB_BUNDLE_DIR"
 cp "$ROOT_DIR/index.html" "$WEB_BUNDLE_DIR/index.html"
+cp "$ROOT_DIR/skills.html" "$WEB_BUNDLE_DIR/skills.html"
+cp "$ROOT_DIR/weekly.html" "$WEB_BUNDLE_DIR/weekly.html"
 cp "$ROOT_DIR/style.css" "$WEB_BUNDLE_DIR/style.css"
 cp "$ROOT_DIR/app.js" "$WEB_BUNDLE_DIR/app.js"
 cp "$ROOT_DIR/server.js" "$WEB_BUNDLE_DIR/server.js"

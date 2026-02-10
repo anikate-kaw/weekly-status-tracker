@@ -21,6 +21,11 @@
   --brand-3: #2f7f9f;
   --brand-contrast: #07111f;
 
+  --skill-title-accent: #8fd8ff;
+  --skill-border-rest: #3e688a;
+  --skill-border-hover: #5e96c2;
+  --skill-border-focus: #8bc0ff;
+
   --focus-ring: #8bc0ff;
 
   --neutral-state-bg: #1a2a3f;
@@ -171,6 +176,11 @@ h1 {
 
 .btn {
   appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  white-space: nowrap;
   border: 1px solid var(--line-subtle);
   background: color-mix(in oklab, var(--surface-2) 85%, #101c2d);
   color: var(--text-1);
@@ -226,6 +236,17 @@ h1 {
   grid-template-columns: minmax(0, 1.15fr) minmax(560px, 1fr);
   gap: 1.15rem;
   align-items: start;
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(520px, 1fr);
+  gap: 1.15rem;
+  align-items: start;
+}
+
+.workspace-skills {
+  min-width: 0;
 }
 
 .weeks-column {
@@ -704,6 +725,7 @@ textarea.task-name-input {
 }
 
 button:focus-visible,
+.btn:focus-visible,
 label.btn:focus-visible,
 .tile-body:focus-visible,
 .task-name-input:focus-visible,
@@ -715,7 +737,8 @@ label.btn:focus-visible,
 }
 
 @media (max-width: 980px) {
-  .dashboard-grid {
+  .dashboard-grid,
+  .workspace-grid {
     grid-template-columns: 1fr;
   }
 
@@ -884,10 +907,12 @@ label.btn:focus-visible,
 }
 
 .skill-tile {
-  border: 1px solid var(--line-subtle);
+  border: 1px solid var(--skill-border-rest);
   border-radius: 18px;
-  background: color-mix(in oklab, var(--surface-2) 88%, #101c2b);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.015), var(--shadow-1);
+  background: color-mix(in oklab, var(--surface-2) 86%, #101d2f);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--skill-border-rest) 34%, transparent),
+    0 6px 16px rgb(2 9 19 / 0.3);
   min-height: 23rem;
   padding: 0.9rem;
   display: flex;
@@ -897,19 +922,29 @@ label.btn:focus-visible,
 }
 
 .skill-tile:hover {
-  border-color: color-mix(in oklab, var(--brand-2) 42%, var(--line-strong));
-  box-shadow: 0 10px 22px rgb(2 10 20 / 0.34);
+  border-color: var(--skill-border-hover);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--skill-border-hover) 46%, transparent),
+    0 10px 22px rgb(2 10 20 / 0.34);
   transform: translateY(-1px);
 }
 
+.skill-tile:focus-within {
+  border-color: var(--skill-border-focus);
+  box-shadow:
+    0 0 0 2px rgb(139 192 255 / 0.2),
+    inset 0 0 0 1px color-mix(in oklab, var(--skill-border-focus) 50%, transparent),
+    0 10px 24px rgb(2 10 20 / 0.36);
+}
+
 .skill-tile.is-grabbed {
-  border-color: color-mix(in oklab, var(--brand-1) 60%, var(--line-strong));
-  box-shadow: 0 0 0 2px rgb(139 192 255 / 0.22);
+  border-color: var(--skill-border-focus);
+  box-shadow: 0 0 0 2px rgb(139 192 255 / 0.24), 0 12px 26px rgb(2 10 20 / 0.38);
 }
 
 .skill-tile.is-drop-target {
-  border-color: color-mix(in oklab, var(--focus-ring) 72%, var(--line-strong));
-  box-shadow: 0 0 0 2px rgb(139 192 255 / 0.24);
+  border-color: color-mix(in oklab, var(--skill-border-focus) 90%, white 8%);
+  box-shadow: 0 0 0 2px rgb(139 192 255 / 0.28), 0 12px 26px rgb(2 10 20 / 0.4);
 }
 
 .skill-header {
@@ -963,7 +998,10 @@ label.btn:focus-visible,
   padding: 0.42rem 0.56rem;
   font-family: 'Space Grotesk', 'Avenir Next', sans-serif;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--skill-title-accent);
+  border-color: color-mix(in oklab, var(--skill-border-rest) 48%, var(--line-subtle));
 }
 
 .skill-copy {
@@ -972,6 +1010,10 @@ label.btn:focus-visible,
   padding: 0.35rem 0.75rem;
   font-size: 0.78rem;
   line-height: 1;
+}
+
+.skill-title-input::placeholder {
+  color: color-mix(in oklab, var(--skill-title-accent) 60%, var(--text-3));
 }
 
 .skill-delete {

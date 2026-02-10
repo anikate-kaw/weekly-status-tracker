@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Skills - Weekly Status Tracker</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-page="skills">
+    <div class="page-shell">
+      <header class="topbar">
+        <div class="brand">
+          <p class="eyebrow">Weekly status tracker</p>
+          <h1>Skills</h1>
+          <p class="sub">Skills page. Create reusable large tiles and keep your text snippets organized.</p>
+        </div>
+
+        <div class="controls">
+          <p class="controls-meta">
+            <span class="controls-meta-label">Storage</span>
+            <span id="storageMode" class="controls-meta-value">Project file</span>
+          </p>
+
+          <div class="controls-actions" role="group" aria-label="Global navigation">
+            <a id="tasksNavBtn" class="btn" href="./index.html">Tasks</a>
+            <a id="skillsNavBtn" class="btn" href="./skills.html">Skills</a>
+            <a id="weeklyNavBtn" class="btn" href="./weekly.html">Weekly</a>
+          </div>
+        </div>
+      </header>
+
+      <main class="stack">
+        <section class="skills-view" aria-label="Skills view">
+          <header class="skills-topbar">
+            <div class="skills-heading">
+              <p class="eyebrow">Skills</p>
+              <h2 class="skills-title">Skills</h2>
+              <p class="skills-sub">Large editable tiles. Drag to reorder and auto-save your notes.</p>
+            </div>
+
+            <div class="skills-actions" role="group" aria-label="Skills actions">
+              <button id="skillsAddBtn" class="btn primary" type="button">New tile</button>
+            </div>
+          </header>
+
+          <ul id="skillsGrid" class="skills-grid" aria-label="Skills tiles"></ul>
+          <p id="skillsEmptyHint" class="skills-empty">No skills yet. Create your first tile.</p>
+        </section>
+      </main>
+
+      <template id="skillTileTemplate">
+        <li class="skill-tile">
+          <div class="skill-header">
+            <span class="skill-drag" draggable="true" title="Drag to reorder" aria-label="Drag tile">⋮⋮</span>
+            <input class="skill-title-input" type="text" placeholder="Skill title" aria-label="Skill title" />
+            <button class="btn small skill-copy" data-action="copy-skill" type="button">Copy</button>
+            <button class="icon skill-delete" data-action="delete-skill" title="Delete tile" aria-label="Delete skill tile" type="button">✕</button>
+          </div>
+          <textarea class="skill-text-input" rows="7" placeholder="Write notes or prompts..." aria-label="Skill text"></textarea>
+        </li>
+      </template>
+
+      <footer class="footer">
+        <span>Tip: skills edits auto-save instantly.</span>
+      </footer>
+    </div>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

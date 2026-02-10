@@ -1,15 +1,31 @@
 # weekly-status-tracker
 
-A weekly status tracker with editable tiles and local machine persistence.
+A local-first productivity dashboard with three dedicated pages:
+
+- `Tasks`
+- `Skills`
+- `Weekly`
+
+All pages read/write the same shared state.
 
 ## Features
 
-- Scrollable feed of weeks (latest week on top)
-- Add/delete weeks
-- Add/delete tiles inside each week
-- Reorder tiles with drag-and-drop or arrow controls
-- Export/import JSON
-- Browser mode persists to `data/weekly-status.json`
+- Weekly tracker page with:
+  - Next/Previous week creation
+  - Week delete
+  - Tile add/edit/delete/reorder (drag + arrows)
+- Tasks page with:
+  - Add/edit/delete tasks
+  - Status/priority dropdowns
+  - Sort modes
+  - Resizable task columns (desktop)
+- Skills page with:
+  - Large editable tiles
+  - Add/edit/delete/reorder
+  - Copy tile body text
+- Shared persistence:
+  - Server mode writes to `data/weekly-status.json`
+  - Browser fallback uses `localStorage`
 - Native macOS app wrapper (`WKWebView`) that auto-starts/stops local server
 
 ## Run locally in browser (project-file persistence)
@@ -21,13 +37,13 @@ A weekly status tracker with editable tiles and local machine persistence.
 node server.js
 ```
 
-3. Open:
+3. Open pages:
 
-```text
-http://localhost:4173
-```
+- Tasks (default): `http://localhost:4173/`
+- Skills: `http://localhost:4173/skills.html`
+- Weekly: `http://localhost:4173/weekly.html`
 
-Your data is stored in:
+Data file:
 
 ```text
 data/weekly-status.json
@@ -56,6 +72,7 @@ dist/Weekly Status.app
 Behavior:
 
 - App opens in its own macOS window.
+- Default launch page is Tasks (`/index.html`).
 - App uses bundled web assets inside the app bundle.
 - App starts a local Node server automatically if needed.
 - App stores data at:
@@ -73,4 +90,4 @@ Notes:
 
 ## Fallback mode
 
-If you open `index.html` directly without `server.js`, the app still works using browser `localStorage` as a fallback.
+If you open HTML files directly without `server.js`, the app still works using browser `localStorage` as a fallback.

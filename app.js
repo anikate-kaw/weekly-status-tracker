@@ -36,16 +36,12 @@ const PRIORITY_SORT_ORDER = {
   P3: 3,
 };
 
-const VIEW_DASHBOARD = 'dashboard';
-const VIEW_SKILLS = 'skills';
-
 const nextWeekBtn = document.getElementById('nextWeekBtn');
 const previousWeekBtn = document.getElementById('previousWeekBtn');
-const trackerBtn = document.getElementById('trackerBtn');
-const skillsBtn = document.getElementById('skillsBtn');
+const tasksNavBtn = document.getElementById('tasksNavBtn');
+const skillsNavBtn = document.getElementById('skillsNavBtn');
+const weeklyNavBtn = document.getElementById('weeklyNavBtn');
 
-const dashboardView = document.getElementById('dashboardView');
-const skillsView = document.getElementById('skillsView');
 const skillsAddBtn = document.getElementById('skillsAddBtn');
 const skillsGrid = document.getElementById('skillsGrid');
 const skillsEmptyHint = document.getElementById('skillsEmptyHint');
@@ -75,13 +71,71 @@ let stateCache = {
   skills: [],
 };
 
-let activeView = VIEW_DASHBOARD;
 let serverReachable = false;
 let serverSaveTimer = null;
 let dragSrc = null;
 let skillDragSourceId = null;
 let activeTaskResize = null;
 let taskColumnLayoutRaf = null;
+
+const pageMode = (() => {
+  const explicit = document.body?.dataset.page;
+  if (explicit === 'tasks' || explicit === 'skills' || explicit === 'weekly') {
+    return explicit;
+  }
+
+  const pathname = (window.location.pathname || '').toLowerCase();
+  if (pathname.endsWith('/weekly.html') || pathname.endsWith('weekly.html')) {
+    return 'weekly';
+  }
+
+  if (pathname.endsWith('/skills.html') || pathname.endsWith('skills.html')) {
+    return 'skills';
+  }
+
+  return 'tasks';
+})();
+
+function isTasksPage() {
+  return pageMode === 'tasks';
+}
+
+function isSkillsPage() {
+  return pageMode === 'skills';
+}
+
+function isWeeklyPage() {
+  return pageMode === 'weekly';
+}
+
+function applyNavigationState() {
+  const tasksActive = isTasksPage();
+  const skillsActive = isSkillsPage();
+  const weeklyActive = isWeeklyPage();
+
+  if (tasksNavBtn) {
+    tasksNavBtn.classList.toggle('is-active', tasksActive);
+    tasksNavBtn.setAttribute('aria-current', tasksActive ? 'page' : 'false');
+  }
+
+  if (skillsNavBtn) {
+    skillsNavBtn.classList.toggle('is-active', skillsActive);
+    skillsNavBtn.setAttribute('aria-current', skillsActive ? 'page' : 'false');
+  }
+
+  if (weeklyNavBtn) {
+    weeklyNavBtn.classList.toggle('is-active', weeklyActive);
+    weeklyNavBtn.setAttribute('aria-current', weeklyActive ? 'page' : 'false');
+  }
+
+  if (weeklyActive) {
+    document.title = 'Weekly Status - Weekly Status Tracker';
+  } else if (skillsActive) {
+    document.title = 'Skills - Weekly Status Tracker';
+  } else {
+    document.title = 'Tasks - Weekly Status Tracker';
+  }
+}
 
 function isValidStateShape(candidate) {
   return Boolean(candidate && typeof candidate === 'object' && candidate.weeks && typeof candidate.weeks === 'object');
@@ -239,54 +293,6 @@ function fmtWeekLabel(weekStartISO) {
   return `Week of ${weekStartISO} -> ${isoDate(end)}`;
 }
 
-
-function viewFromHash(hashValue) {
-  return hashValue === "#skills" ? VIEW_SKILLS : VIEW_DASHBOARD;
-}
-
-function hashForView(view) {
-  return view === VIEW_SKILLS ? "#skills" : "#dashboard";
-}
-
-function setActiveView(view, { syncHash = true } = {}) {
-  const nextView = view === VIEW_SKILLS ? VIEW_SKILLS : VIEW_DASHBOARD;
-  activeView = nextView;
-
-  if (dashboardView) {
-    dashboardView.hidden = nextView !== VIEW_DASHBOARD;
-  }
-
-  if (skillsView) {
-    skillsView.hidden = nextView !== VIEW_SKILLS;
-  }
-
-  if (trackerBtn) {
-    const isDashboard = nextView === VIEW_DASHBOARD;
-    trackerBtn.classList.toggle('is-active', isDashboard);
-    trackerBtn.setAttribute('aria-pressed', String(isDashboard));
-  }
-
-  if (skillsBtn) {
-    const isSkills = nextView === VIEW_SKILLS;
-    skillsBtn.classList.toggle('is-active', isSkills);
-    skillsBtn.setAttribute('aria-pressed', String(isSkills));
-  }
-
-  document.title = nextView === VIEW_SKILLS
-    ? "Skills - Weekly Status Tracker"
-    : "Weekly Status Tracker";
-
-  if (syncHash) {
-    const targetHash = hashForView(nextView);
-    if (window.location.hash !== targetHash) {
-      if (history.replaceState) {
-        history.replaceState(null, "", targetHash);
-      } else {
-        window.location.hash = targetHash;
-      }
-    }
-  }
-}
 function loadLocalState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -679,6 +685,8 @@ function addTask() {
 }
 
 function focusTaskName(taskId) {
+  if (!tasksList) return;
+
   const input = tasksList.querySelector(`[data-task-id="${CSS.escape(taskId)}"] .task-name-input`);
   if (!input) return;
 
@@ -1125,7 +1133,9 @@ function renderWeekSection(weekStartISO, weekData) {
   return section;
 }
 
-function render() {
+function renderWeeklyTracker() {
+  if (!weeksContainer || !weekTemplate || !tileTemplate) return;
+
   const state = stateCache;
   let weeks = getAllWeeksSorted(state);
 
@@ -1144,9 +1154,29 @@ function render() {
     section.style.setProperty('--stagger', String(idx));
     weeksContainer.appendChild(section);
   });
+}
+
+function renderTasksPage() {
   renderTasks();
-  renderSkills();
   scheduleTaskColumnLayoutSync();
+}
+
+function renderSkillsPage() {
+  renderSkills();
+}
+
+function render() {
+  if (isWeeklyPage()) {
+    renderWeeklyTracker();
+  }
+
+  if (isTasksPage()) {
+    renderTasksPage();
+  }
+
+  if (isSkillsPage()) {
+    renderSkillsPage();
+  }
 }
 
 function addTileToWeek(weekStartISO) {
@@ -1157,7 +1187,7 @@ function addTileToWeek(weekStartISO) {
   render();
 
   // Focus first editable tile of that week.
-  const section = weeksContainer.querySelector(`[data-week="${CSS.escape(weekStartISO)}"]`);
+  const section = weeksContainer?.querySelector(`[data-week="${CSS.escape(weekStartISO)}"]`);
   const first = section?.querySelector('.tile .tile-body');
   first?.focus();
 }
@@ -1244,7 +1274,7 @@ function addPreviousWeek() {
 
   createWeekAtISO(previousISO);
 
-  const previousSection = weeksContainer.querySelector(`[data-week="${CSS.escape(previousISO)}"]`);
+  const previousSection = weeksContainer?.querySelector(`[data-week="${CSS.escape(previousISO)}"]`);
   if (previousSection) {
     previousSection.scrollIntoView({ behavior: 'smooth', block: 'end' });
   } else {
@@ -1335,37 +1365,33 @@ function wireWeekList(listEl) {
   }
 }
 
-nextWeekBtn.addEventListener('click', addNextWeek);
-previousWeekBtn.addEventListener('click', addPreviousWeek);
-
-
-if (trackerBtn) {
-  trackerBtn.addEventListener('click', () => {
-    setActiveView(VIEW_DASHBOARD);
-  });
+if (nextWeekBtn) {
+  nextWeekBtn.addEventListener('click', addNextWeek);
 }
 
-if (skillsBtn) {
-  skillsBtn.addEventListener('click', () => {
-    setActiveView(VIEW_SKILLS);
-  });
+if (previousWeekBtn) {
+  previousWeekBtn.addEventListener('click', addPreviousWeek);
 }
 
 if (skillsAddBtn) {
   skillsAddBtn.addEventListener('click', () => {
     const skillId = addSkillTile();
-    setActiveView(VIEW_SKILLS);
     focusSkillTitle(skillId);
   });
 }
-addTaskBtn.addEventListener('click', () => {
-  const taskId = addTask();
-  focusTaskName(taskId);
-});
 
-taskSortSelect.addEventListener('change', () => {
-  setTaskSortMode(taskSortSelect.value);
-});
+if (addTaskBtn) {
+  addTaskBtn.addEventListener('click', () => {
+    const taskId = addTask();
+    focusTaskName(taskId);
+  });
+}
+
+if (taskSortSelect) {
+  taskSortSelect.addEventListener('change', () => {
+    setTaskSortMode(taskSortSelect.value);
+  });
+}
 
 if (taskResizeNameStatus) {
   taskResizeNameStatus.addEventListener('pointerdown', (event) => {
@@ -1379,11 +1405,9 @@ if (taskResizeStatusPriority) {
   });
 }
 
-window.addEventListener('resize', scheduleTaskColumnLayoutSync);
-
-window.addEventListener('hashchange', () => {
-  setActiveView(viewFromHash(window.location.hash), { syncHash: false });
-});
+if (tasksPanel) {
+  window.addEventListener('resize', scheduleTaskColumnLayoutSync);
+}
 
 async function initialize() {
   stateCache = loadLocalState();
@@ -1397,8 +1421,8 @@ async function initialize() {
     setServerReachable(false);
   }
 
+  applyNavigationState();
   render();
-  setActiveView(viewFromHash(window.location.hash), { syncHash: true });
 }
 
 initialize();

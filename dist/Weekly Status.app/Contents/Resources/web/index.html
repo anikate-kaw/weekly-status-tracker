@@ -3,16 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Weekly Status Tracker</title>
+    <title>Tasks - Weekly Status Tracker</title>
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body>
+  <body data-page="tasks">
     <div class="page-shell">
       <header class="topbar">
         <div class="brand">
           <p class="eyebrow">Weekly status tracker</p>
-          <h1>Weekly Status updates</h1>
-          <p class="sub">One list per week. Reorder sections by drag or arrows. Saved locally on your machine.</p>
+          <h1>Tasks</h1>
+          <p class="sub">Task tracker page. All edits auto-save to your shared project state.</p>
         </div>
 
         <div class="controls">
@@ -21,109 +21,44 @@
             <span id="storageMode" class="controls-meta-value">Project file</span>
           </p>
 
-          <div class="controls-actions" role="group" aria-label="Global actions">
-            <button id="trackerBtn" class="btn is-active" type="button" aria-pressed="true">Tracker</button>
-            <button id="skillsBtn" class="btn" type="button" aria-pressed="false">Skills</button>
+          <div class="controls-actions" role="group" aria-label="Global navigation">
+            <a id="tasksNavBtn" class="btn" href="./index.html">Tasks</a>
+            <a id="skillsNavBtn" class="btn" href="./skills.html">Skills</a>
+            <a id="weeklyNavBtn" class="btn" href="./weekly.html">Weekly</a>
           </div>
         </div>
       </header>
 
       <main class="stack">
-        <section id="dashboardView" class="app-view" aria-label="Dashboard view">
-          <div class="dashboard-grid">
-            <section class="weeks-column" aria-label="Weekly tracker">
-              <div class="week-nav top" role="group" aria-label="Add newer week">
-                <button id="nextWeekBtn" class="btn primary" type="button">Next week</button>
-              </div>
-
-              <div id="weeksContainer" class="weeks" aria-label="Weeks"></div>
-
-              <div class="week-nav bottom" role="group" aria-label="Add older week">
-                <button id="previousWeekBtn" class="btn" type="button">Previous week</button>
-              </div>
-            </section>
-
-            <aside id="tasksPanel" class="tasks-panel" aria-label="Task tracker">
-              <div class="tasks-panel-head">
-                <h2 class="tasks-title">Tasks tracker</h2>
-                <p class="tasks-subtitle">Color-coded by status and priority</p>
-              </div>
-
-              <div class="tasks-controls" role="group" aria-label="Task controls">
-                <button id="addTaskBtn" class="btn small" type="button">Add task</button>
-                <label class="tasks-sort-label" for="taskSortSelect">Sort</label>
-                <select id="taskSortSelect" class="task-sort-select" aria-label="Sort tasks">
-                  <option value="priority">Priority</option>
-                  <option value="status">Status</option>
-                  <option value="created_at">Date created</option>
-                </select>
-              </div>
-
-              <div id="taskGridHead" class="task-grid-head" aria-hidden="true">
-                <span class="task-col-label">Task</span>
-                <span class="task-col-label">Status</span>
-                <span class="task-col-label">Priority</span>
-                <span class="task-col-label task-col-label-ghost"></span>
-                <div id="taskResizeNameStatus" class="task-col-resizer task-col-resizer-name-status"></div>
-                <div id="taskResizeStatusPriority" class="task-col-resizer task-col-resizer-status-priority"></div>
-              </div>
-
-              <ul id="tasksList" class="tasks-list" aria-label="Tasks"></ul>
-              <p id="tasksEmptyHint" class="tasks-empty">No tasks yet. Add one to get started.</p>
-            </aside>
+        <section id="tasksPanel" class="tasks-panel" aria-label="Task tracker">
+          <div class="tasks-panel-head">
+            <h2 class="tasks-title">Tasks tracker</h2>
+            <p class="tasks-subtitle">Color-coded by status and priority</p>
           </div>
-        </section>
 
-        <section id="skillsView" class="app-view skills-view" aria-label="Skills view" hidden>
-          <header class="skills-topbar">
-            <div class="skills-heading">
-              <p class="eyebrow">Skills</p>
-              <h2 class="skills-title">Skills</h2>
-              <p class="skills-sub">Large editable tiles. Drag to reorder and auto-save your notes.</p>
-            </div>
+          <div class="tasks-controls" role="group" aria-label="Task controls">
+            <button id="addTaskBtn" class="btn small" type="button">Add task</button>
+            <label class="tasks-sort-label" for="taskSortSelect">Sort</label>
+            <select id="taskSortSelect" class="task-sort-select" aria-label="Sort tasks">
+              <option value="priority">Priority</option>
+              <option value="status">Status</option>
+              <option value="created_at">Date created</option>
+            </select>
+          </div>
 
-            <div class="skills-actions" role="group" aria-label="Skills actions">
-              <button id="skillsAddBtn" class="btn primary" type="button">New tile</button>
-            </div>
-          </header>
+          <div id="taskGridHead" class="task-grid-head" aria-hidden="true">
+            <span class="task-col-label">Task</span>
+            <span class="task-col-label">Status</span>
+            <span class="task-col-label">Priority</span>
+            <span class="task-col-label task-col-label-ghost"></span>
+            <div id="taskResizeNameStatus" class="task-col-resizer task-col-resizer-name-status"></div>
+            <div id="taskResizeStatusPriority" class="task-col-resizer task-col-resizer-status-priority"></div>
+          </div>
 
-          <ul id="skillsGrid" class="skills-grid" aria-label="Skills tiles"></ul>
-          <p id="skillsEmptyHint" class="skills-empty">No skills yet. Create your first tile.</p>
+          <ul id="tasksList" class="tasks-list" aria-label="Tasks"></ul>
+          <p id="tasksEmptyHint" class="tasks-empty">No tasks yet. Add one to get started.</p>
         </section>
       </main>
-
-      <template id="weekTemplate">
-        <section class="week">
-          <div class="week-head">
-            <div class="week-heading">
-              <h2 class="week-title"></h2>
-              <div class="week-meta"></div>
-            </div>
-            <div class="week-actions">
-              <button class="btn small danger" data-action="delete-week" type="button">Delete week</button>
-              <button class="btn small" data-action="add" type="button">Add tile</button>
-            </div>
-          </div>
-          <ul class="list" aria-label="Week tiles"></ul>
-        </section>
-      </template>
-
-      <template id="tileTemplate">
-        <li class="tile" draggable="true">
-          <div class="tile-bar">
-            <span class="drag-wrap">
-              <span class="drag" title="Drag to reorder" aria-label="Drag tile">⋮⋮</span>
-              <span class="drag-label">Drag</span>
-            </span>
-            <div class="tile-actions">
-              <button class="icon" data-action="up" title="Move up" aria-label="Move tile up" type="button">↑</button>
-              <button class="icon" data-action="down" title="Move down" aria-label="Move tile down" type="button">↓</button>
-              <button class="icon" data-action="delete" title="Delete" aria-label="Delete tile" type="button">✕</button>
-            </div>
-          </div>
-          <div class="tile-body" contenteditable="true" spellcheck="true" data-placeholder="Add a section like 'Last week' or 'Next week', then bullets..."></div>
-        </li>
-      </template>
 
       <template id="taskRowTemplate">
         <li class="task-row">
@@ -143,20 +78,8 @@
         </li>
       </template>
 
-      <template id="skillTileTemplate">
-        <li class="skill-tile">
-          <div class="skill-header">
-            <span class="skill-drag" draggable="true" title="Drag to reorder" aria-label="Drag tile">⋮⋮</span>
-            <input class="skill-title-input" type="text" placeholder="Skill title" aria-label="Skill title" />
-            <button class="btn small skill-copy" data-action="copy-skill" type="button">Copy</button>
-            <button class="icon skill-delete" data-action="delete-skill" title="Delete tile" aria-label="Delete skill tile" type="button">✕</button>
-          </div>
-          <textarea class="skill-text-input" rows="7" placeholder="Write notes or prompts..." aria-label="Skill text"></textarea>
-        </li>
-      </template>
-
       <footer class="footer">
-        <span>Tip: drag tiles or use arrows to reorder. Edits auto-save.</span>
+        <span>Tip: task edits auto-save instantly.</span>
       </footer>
     </div>
 
